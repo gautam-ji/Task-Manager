@@ -1,6 +1,19 @@
 import mongoose from "mongoose"
 
-const taskSchema = new mongoose({
+
+const todoSchema = new mongoose.Schema({
+    text: {
+        type: String,
+        required: true
+    },
+    completed: {
+        type: Boolean,
+        default:false
+    }
+})
+
+
+const taskSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true
@@ -42,7 +55,7 @@ const taskSchema = new mongoose({
         }
     ],
 
-    todoCecklist:[todoSchema],
+    todoChecklist:[todoSchema],
 
     progress: {type: Number, default: 0} ,
 
