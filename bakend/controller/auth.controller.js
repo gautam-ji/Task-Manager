@@ -131,3 +131,20 @@ try{
     next(err)
 }
 }
+
+// upload Profile
+
+export const uploadImage = async(req, res,next) =>{
+    try{
+        if(!req.file) {
+            return next(errorHandler(400, "No file uploaded"))
+        }
+
+        const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+
+        res.status(200).json({imageUrl})
+
+    }catch(err){
+        next(err)
+    }
+}
