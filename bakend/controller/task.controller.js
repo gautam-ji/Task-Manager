@@ -28,3 +28,79 @@ export const createTask = async (req, res, next ) => {
     next(error)
    }
 }
+
+export const getTask = async (req, res, next) => {
+   try {
+    const { status } = req.query
+    // console.log(`this is status ${status}`)
+    // console.log(`this is req.body = ${req.query}`)
+
+    let filter = {}
+
+    if (status) {
+        filter.status = status
+    }
+
+    let tasks
+
+    if(req.user.role === "admin"){
+        tasks = await Task.find(filter).populate("assignedTo", "name email profileImageUrl")
+    } else {
+        tasks =  await Task.find({
+            ...filter,
+            assignedTo: req.user.id,
+        }).populate("assignedTo", "name email profileImageUrl")
+    }
+
+    tasks = await Promise.all(
+        tasks.map(async (task) => {
+            const completedCount = task.todoChecklist.filter(
+             (item) => item.completed
+            ).length
+            
+           return {...task._doc, completedCount: completedCount}
+
+        })
+    )
+
+
+    //status summary count 
+
+    const allTasks =  await Task.countDocuments(
+        req.user.role === "admin"  ? {} : {assigendTo: req.user.id}
+    )
+
+    const pandingTasks = await Task.countDocuments({
+        ...filter,
+        status: "Pending",
+        ...(req.user.role !== "admin" && {assignedTo: req.user.id}),
+
+    })
+
+     const inProgressTask =  await Task.countDocuments({
+        ...filter,
+        status: "In Progress",
+        ...(req.user.role !== "admin" && {assigendTo: req.user.id}),
+     })
+
+     const completedTask = await Task.countDocuments({
+        ...filter,
+        status: "Completed",
+        ...(req.user.role !== "admin" && {assignedTo: req.user.id})
+
+     })
+
+     res.status(200).json({
+        tasks,
+        statusSummary: {
+            all: allTasks,
+            pandingTasks ,
+            inProgressTask,
+            completedTask
+        }
+     })
+
+   } catch (error) {
+    next(error)
+   }   
+}
