@@ -1,9 +1,13 @@
 import { errorHandler } from "../utils/error.js"
 import Task from "../models/task.model.js"
 
+
+// create a task 
 export const createTask = async (req, res, next ) => {
    try {
-    const {title, description, priority, dueDate, assignedTo, attachments, todoChecklist} = req.body
+    const {title, description, priority,
+         dueDate, assignedTo, attachments,
+          todoChecklist} = req.body
 
       
     if(!Array.isArray(assignedTo)){
@@ -29,6 +33,8 @@ export const createTask = async (req, res, next ) => {
    }
 }
 
+
+//get Task get all task the data 
 export const getTask = async (req, res, next) => {
    try {
     const { status } = req.query
@@ -109,7 +115,7 @@ export const  getTaskById = async (req, res, next) => {
     try{
       const task = await Task.findById(req.params.id).populate(
         "assignedTo",
-        "name email profileImage"
+        "name email profileImageUrl"
       )
 
       if(!task) {
@@ -154,7 +160,7 @@ export const updateTask = async (req, res, next) => {
     } catch(error) {
         next(error)
     }
-}
+} 
 
 export const deleteTask = async(req, res, next) =>{
     try{
@@ -198,6 +204,123 @@ export const updateTaskStatus = async(req, res, next) =>{
     res.status(200).json({message: "Task status updated", task})
 
     } catch(error) {
+        next(error)
+    }
+ }
+/** 
+export const  updateTaskChecklist = async(req, res, next) =>{
+    try{
+        const { todoChecklist } = req.body
+
+        const task = await Task.findById(req.params.id)
+
+        if(!task) {
+            return next(errorHandler(404, "Task not found!"))
+        }
+        
+        if(!task.assignedTo.includes(req.user.id) && req.user.role !== "admin"){
+            return next(errorHandler(403, "Not authorized to update checklist"))
+        }
+
+        task.todoChecklist = todoChecklist
+
+        const completedCount = task.todoChecklist.filter(
+            (item) => item.completed
+        ).length
+
+        const totalItems = task.todoChecklist.length
+
+        task.progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0
+
+        if(task.progress === 100){
+            task.status = "Completed"
+        }else if(task.progress > 0) {
+            task.status = "In Progress"
+        }else if(
+            task.status = "Pending"
+        )
+
+        await task.save()
+        const updatedTask = await Task.findById(req.params.id).populate("assignedTo", "name email profileImageUrl")
+
+        res.status(200).json({message: "Task checklist updated", task: updatedTask})
+
+    }catch (error){
+        next(error)
+    }
+}
+
+*/
+
+export const updateTaskChecklist = async(req, res, next) =>{
+    try{
+        console.log("👉 API HIT")
+
+        const { todoChecklist } = req.body
+        console.log("👉 req.body:", req.body)
+
+        const task = await Task.findById(req.params.id)
+        console.log("👉 task from DB:", task)
+
+        if(!task) {
+            return next(errorHandler(404, "Task not found!"))
+        }
+
+        // 🔥 CHECK assignedTo
+        console.log("👉 assignedTo:", task.assignedTo)
+        console.log("👉 req.user.id:", req.user.id)
+
+        const isAssigned = task.assignedTo.some(
+            (userId) => userId.toString() === req.user.id.toString()
+        )
+
+        console.log("👉 isAssigned:", isAssigned)
+
+        if(!isAssigned && req.user.role !== "admin"){
+            return next(errorHandler(403, "Not authorized"))
+        }
+
+        task.todoChecklist = todoChecklist
+        console.log("👉 Updated checklist:", task.todoChecklist)
+
+        const completedCount = task.todoChecklist.filter(
+            (item) => item.completed
+        ).length
+
+        const totalItems = task.todoChecklist.length
+
+        console.log("👉 completedCount:", completedCount)
+        console.log("👉 totalItems:", totalItems)
+
+        task.progress = totalItems > 0 
+            ? Math.round((completedCount / totalItems) * 100) 
+            : 0
+
+        console.log("👉 progress:", task.progress)
+
+        // 🔴 YAHI BUG THA
+        if(task.progress === 100){
+            task.status = "Completed"
+        } else if(task.progress > 0) {
+            task.status = "In Progress"
+        } else {
+            task.status = "Pending"
+        }
+
+        console.log("👉 final status:", task.status)
+
+        await task.save()
+        console.log("✅ SAVED IN DB")
+
+        const updatedTask = await Task.findById(req.params.id)
+
+        res.status(200).json({
+            message: "Task checklist updated",
+            task: updatedTask
+        })
+
+    }catch (error){
+        console.log("❌ ERROR:", error)
         next(error)
     }
 }
