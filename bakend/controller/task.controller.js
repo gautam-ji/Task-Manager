@@ -324,3 +324,39 @@ export const updateTaskChecklist = async(req, res, next) =>{
         next(error)
     }
 }
+
+export const getDashboardData = async(req,res, next) =>{
+    try{
+      //Fetch statistics 
+      
+      const totalTasks = await Task.countDocuments()
+      const PendingTask = await Task.countDocuments({status: "Pending"})
+      const completedTask = await Task.countDocuments({status: "Completed"})
+      const overdueTask = await Task.countDocuments({
+        status: {$ne: "Completed"},
+        dueDate: {$lt: new Date()}
+      })
+
+      const updateTaskStatus = ["Pending", "In progress", "Completed"]
+
+      const taskDistributionRaw = await Task.aggregate([
+        {
+            $group: {
+                _id: "$status",
+                count: {$sum: 1}
+            }
+        }
+      ])
+
+      const taskDistribution = updateTaskStatus.reduce((acc, status) => {
+        const formatedKey = status.replace(/\s+/g, "") //remove spaces for response keys
+
+        acc[formatedKey] = taskDistributionRaw.find((item) => item._id === status)?.count || 0
+        return acc
+      }, {})
+
+        
+    } catch(error) {
+        next(error)
+    }
+}
