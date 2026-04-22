@@ -325,6 +325,8 @@ export const updateTaskChecklist = async(req, res, next) =>{
     }
 }
 
+
+
 export const getDashboardData = async(req,res, next) =>{
     try{
       //Fetch statistics 
@@ -354,6 +356,56 @@ export const getDashboardData = async(req,res, next) =>{
         acc[formatedKey] = taskDistributionRaw.find((item) => item._id === status)?.count || 0
         return acc
       }, {})
+
+
+
+
+
+
+
+      
+      taskDistribution["All"]  = totalTasks
+
+      const taskpriorities = ["Low", "Medium", "High"]
+
+      const taskpriorityLevelRaw = await Task.aggregate([
+        {
+            $group: {
+                _id: "$priority",
+                count: {$sum:1},
+            }
+        }
+      ])
+
+
+      const taskPriorityLevel = taskpriorities.reduce((acc, priority) => {
+        // taskDistributionRaw ki jagah taskpriorityLevelRaw hona chahiye
+       acc[priority] = taskpriorityLevelRaw.find((item) => item._id === priority)?.count || 0;
+
+          return acc;
+       }, {});
+
+      //Fetch recent 10 tasks 
+
+      const recentTasks = await Task.find()
+      .sort({createdAt: -1})
+      .limit(10)
+      .select("title status priority dueDate createdAt")
+
+    res.status(200).json({
+        statistics: {
+            totalTasks,
+            PendingTask,
+            completedTask,
+            overdueTask
+        },
+        charts: {
+            taskDistribution,
+            taskPriorityLevel
+        },
+
+        recentTasks
+    })
 
         
     } catch(error) {

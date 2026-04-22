@@ -42,12 +42,17 @@ const taskSchema = new mongoose.Schema({
         }
     ],
 
-    createdBy: [
-      {
+    // createdBy: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "User",
+    //   }
+    // ],
+
+     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      }
-    ],
+        ref: "user"
+     },
 
     attachments: [
         {
